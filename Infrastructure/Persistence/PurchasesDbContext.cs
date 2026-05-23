@@ -49,6 +49,7 @@ public sealed class PurchasesDbContext(DbContextOptions<PurchasesDbContext> opti
         {
             entity.ToTable("suppliers");
             entity.HasKey(x => x.Id);
+            entity.Property(x => x.Id).HasColumnName("id");
             entity.HasIndex(x => new { x.CompanyId, x.Code }).IsUnique();
             entity.Property(x => x.CompanyId).HasColumnName("company_id");
             entity.Property(x => x.Code).HasColumnName("code");
