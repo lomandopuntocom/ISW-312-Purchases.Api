@@ -47,7 +47,7 @@ public sealed class PurchasesDbContext(DbContextOptions<PurchasesDbContext> opti
 
         modelBuilder.Entity<Supplier>(entity =>
         {
-            entity.ToTable("suppliers", tb => tb.ExcludeFromMigrations());
+            entity.ToTable("suppliers");
             entity.HasKey(x => x.Id);
             entity.HasIndex(x => new { x.CompanyId, x.Code }).IsUnique();
             entity.Property(x => x.CompanyId).HasColumnName("company_id");
@@ -62,6 +62,7 @@ public sealed class PurchasesDbContext(DbContextOptions<PurchasesDbContext> opti
         {
             entity.ToTable("companies", "inventory", tb => tb.ExcludeFromMigrations());
             entity.HasKey(x => x.Id);
+            entity.Property(x => x.Id).HasColumnName("id");
             entity.Property(x => x.Cen).HasColumnName("cen");
             entity.Property(x => x.Active).HasColumnName("active");
         });
