@@ -124,7 +124,69 @@ public sealed class PurchaseOrdersController(PurchasesDbContext db, IInventorySt
         return Ok(ToDetail(order));
     }
 
+    [HttpPut("{orderCen}")]
+    public async Task<IActionResult> UpdateOrder(string companyCen, string orderCen, CreatePurchaseOrderContractRequest request)
+    {
+        if (!TryParseCen(companyCen, out var companyCenValue)) return NotFound();
+
+        var company = await ResolveCompanyAsync(companyCen);
+        if (company is null) return NotFound();
+
+        var order = await FindOrderAsync(companyCen, orderCen);
+        if (order is null) return NotFound();
+
+        if (order.Status != "DRAFT")
+            return Conflict("Only draft orders can be updated.");
+
+        var supplierCode = (request.SupplierCen ?? string.Empty).Trim().ToUpperInvariant();
+        if (string.IsNullOrWhiteSpace(supplierCode))
+            return BadRequest("Supplier code (supplierCen) is required.");
+
+        var supplier = await Db.Suppliers.FirstOrDefaultAsync(x =>
+            x.CompanyId == company.Id && x.Code == supplierCode && x.Active);
+
+        if (supplier is null)
+            return BadRequest($"Supplier '{supplierCode}' was not found. Register it in suppliers first.");
+
+        // Clear existing items
+        Db.OrderItems.RemoveRange(order.Items);
+        order.Items.Clear();
+
+        // Add new items
+        foreach (var item in request.Items)
+        {
+            if (!TryParseCen(item.ProductCen, out var productCen)) continue;
+            if (item.Quantity != Math.Floor(item.Quantity) || item.Quantity < 1) continue;
+
+            order.Items.Add(new PurchaseOrderItem
+            {
+                OrderCen = order.Cen,
+                ProductCen = productCen,
+                Quantity = (decimal)item.Quantity
+            });
+        }
+
+        if (order.Items.Count == 0)
+            return BadRequest("At least one valid item with a positive whole quantity is required.");
+
+        order.Supplier = supplier.Name;
+        order.UpdatedAt = DateTime.UtcNow;
+
+        await Db.SaveChangesAsync();
+
+        var lines = order.Items.Select(x => new PurchaseOrderLineContractDto(x.ProductCen.ToString(), (double)x.Quantity)).ToList();
+
+        return Ok(new PurchaseOrderContractDto(
+            order.Cen.ToString(),
+            supplier.Code,
+            request.WarehouseCen,
+            order.Status,
+            order.CreatedAt,
+            lines));
+    }
+
     private async Task<PurchaseOrder?> FindOrderAsync(string companyCen, string orderCen)
+
     {
         if (!TryParseCen(companyCen, out var company) || !TryParseCen(orderCen, out var order)) return null;
         return await Db.Orders.Include(x => x.Items).FirstOrDefaultAsync(x => x.CompanyCen == company && x.Cen == order);

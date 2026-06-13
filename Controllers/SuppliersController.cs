@@ -70,4 +70,27 @@ public sealed class SuppliersController(PurchasesDbContext db) : PurchasesContro
 
         return supplier is null ? NotFound() : Ok(ToSupplierDto(supplier));
     }
+
+    [HttpPut("{supplierCen}")]
+    public async Task<IActionResult> UpdateSupplier(string companyCen, string supplierCen, UpdateSupplierContractRequest request)
+    {
+        var company = await ResolveCompanyAsync(companyCen);
+        if (company is null) return NotFound();
+
+        var supplier = await Db.Suppliers
+            .FirstOrDefaultAsync(x => x.CompanyId == company.Id && x.Code == supplierCen.Trim().ToUpperInvariant());
+
+        if (supplier is null) return NotFound();
+
+        if (string.IsNullOrWhiteSpace(request.Name))
+            return BadRequest("Supplier name is required.");
+
+        supplier.Name = request.Name.Trim();
+        supplier.UpdatedAt = DateTime.UtcNow;
+
+        await Db.SaveChangesAsync();
+
+        return Ok(new SupplierContractDto(supplier.Code, supplier.Name));
+    }
 }
+

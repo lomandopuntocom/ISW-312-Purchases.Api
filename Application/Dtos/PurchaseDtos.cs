@@ -8,3 +8,17 @@ public sealed record SupplierDto(string SupplierCen, string Code, string Name, b
 public sealed record UpsertSupplierRequest(string Name, string? Code);
 public sealed record CreatePurchaseOrderRequest(string? Supplier, string? SupplierCen, IReadOnlyList<CreatePurchaseOrderItemRequest> Items);
 public sealed record CreatePurchaseOrderItemRequest(string ProductCen, decimal Quantity);
+
+public sealed record UpdateSupplierContractRequest(string Name);
+public sealed record SupplierContractDto(string SupplierCen, string Name);
+public sealed record PurchaseOrderLineContractDto(string ProductCen, double Quantity);
+public sealed record CreatePurchaseOrderContractRequest(string SupplierCen, string? WarehouseCen, IReadOnlyList<PurchaseOrderLineContractDto> Items);
+public sealed record PurchaseOrderContractDto(
+    string OrderCen,
+    string SupplierCen,
+    string? WarehouseCen,
+    string Status,
+    DateTime CreatedAt,
+    IReadOnlyList<PurchaseOrderLineContractDto> Items
+);
+
