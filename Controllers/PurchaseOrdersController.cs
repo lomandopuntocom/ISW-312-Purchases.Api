@@ -91,6 +91,7 @@ public sealed class PurchaseOrdersController(PurchasesDbContext db, IInventorySt
     }
 
     [HttpPost("{orderCen}/confirm")]
+    [HttpPost("{orderCen}/receive")]
     public async Task<IActionResult> Confirm(string companyCen, string orderCen, CancellationToken cancellationToken)
     {
         var order = await FindOrderAsync(companyCen, orderCen);
